@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>POS Search Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+        input { padding: 5px; margin: 5px; }
+        button { padding: 8px 15px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>POS Search Functionality Test</h1>
+    
+    <div class="test">
+        <h2>Test 1: Session Check</h2>
+        <button onclick="testSession()">Check Login Status</button>
+        <div id="sessionResult"></div>
+    </div>
+    
+    <div class="test">
+        <h2>Test 2: Product Search</h2>
+        <input type="text" id="searchInput" placeholder="Enter search term" value="">
+        <button onclick="testSearch()">Search Products</button>
+        <button onclick="testSearch('')">Load All Products</button>
+        <div id="searchResult"></div>
+    </div>
+    
+    <div class="test">
+        <h2>Test 3: Common Searches</h2>
+        <button onclick="testSearch('a')">Search 'a'</button>
+        <button onclick="testSearch('Laptop')">Search 'Laptop'</button>
+        <button onclick="testSearch('123')">Search '123'</button>
+        <div id="commonResult"></div>
+    </div>
+    
+    <div class="test">
+        <h2>Test 4: API Response Analysis</h2>
+        <button onclick="analyzeAPI()">Analyze API Response</button>
+        <div id="apiAnalysis"></div>
+    </div>
+
+    <script>
+        async function testSession() {
+            const result = document.getElementById('sessionResult');
+            try {
+                const response = await fetch('api/auth/check_session.php');
+                const data = await response.json();
+                
+                let html = `<h3>Session Status:</h3>`;
+                html += `<p><strong>Logged In:</strong> <span class="${data.logged_in ? 'success' : 'error'}">${data.logged_in}</span></p>`;
+                html += `<p><strong>Session ID:</strong> ${data.session_id}</p>`;
+                html += `<p><strong>User ID:</strong> ${data.user_id || 'None'}</p>`;
+                html += `<p><strong>User Data:</strong></p>`;
+                html += `<pre>${JSON.stringify(data.user, null, 2)}</pre>`;
+                
+                result.innerHTML = html;
+            } catch (error) {
+                result.innerHTML = `<p class="error">Error checking session: ${error.message}</p>`;
+            }
+        }
+
+        async function testSearch(query = null) {
+            const searchInput = document.getElementById('searchInput');
+            const result = document.getElementById('searchResult');
+            
+            if (query === null) {
+                query = searchInput.value;
+            }
+            
+            result.innerHTML = `<p>Searching for: "${query}"...</p>`;
+            
+            try {
+                const url = `api/products/search.php?q=${encodeURIComponent(query)}`;
+                console.log('Testing URL:', url);
+                
+                const response = await fetch(url);
+                console.log('Response status:', response.status, response.statusText);
+                
+                const responseText = await response.text();
+                console.log('Raw response:', responseText);
+                
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                } catch (jsonError) {
+                    result.innerHTML += `
+                        <p class="error">✗ Invalid JSON response</p>
+                        <p><strong>Raw Response:</strong></p>
+                        <pre>${responseText}</pre>
+                    `;
+                    return;
+                }
+                
+                let html = `<h3>Search Results for "${query}":</h3>`;
+                html += `<p><strong>Status:</strong> ${response.status} ${response.statusText}</p>`;
+                html += `<p><strong>Success:</strong> <span class="${data.success ? 'success' : 'error'}">${data.success}</span></p>`;
+                
+                if (data.success) {
+                    html += `<p><strong>Products Found:</strong> ${data.data.length}</p>`;
+                    
+                    if (data.data.length > 0) {
+                        html += `<table border="1" style="border-collapse: collapse; width: 100%; margin-top: 10px;">`;
+                        html += `<tr><th>ID</th><th>Name</th><th>Barcode</th><th>Price</th><th>Stock</th></tr>`;
+                        data.data.forEach(product => {
+                            html += `<tr>`;
+                            html += `<td>${product.id}</td>`;
+                            html += `<td>${product.name}</td>`;
+                            html += `<td>${product.barcode || 'N/A'}</td>`;
+                            html += `<td>$${product.sale_price}</td>`;
+                            html += `<td>${product.stock || 0}</td>`;
+                            html += `</tr>`;
+                        });
+                        html += `</table>`;
+                    } else {
+                        html += `<p class="info">No products found</p>`;
+                    }
+                } else {
+                    html += `<p class="error">✗ API Error: ${data.message}</p>`;
+                }
+                
+                result.innerHTML = html;
+                
+            } catch (error) {
+                result.innerHTML = `<p class="error">Network Error: ${error.message}</p>`;
+            }
+        }
+
+        async function analyzeAPI() {
+            const result = document.getElementById('apiAnalysis');
+            result.innerHTML = `<p>Analyzing API structure...</p>`;
+            
+            try {
+                // Test empty query
+                const response = await fetch('api/products/search.php?q=');
+                const data = await response.json();
+                
+                let html = `<h3>API Analysis:</h3>`;
+                html += `<p><strong>Response Structure:</strong></p>`;
+                html += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                
+                if (data.success && data.data.length > 0) {
+                    const sampleProduct = data.data[0];
+                    html += `<p><strong>Sample Product Fields:</strong></p>`;
+                    html += `<ul>`;
+                    Object.keys(sampleProduct).forEach(key => {
+                        html += `<li><strong>${key}:</strong> ${sampleProduct[key]} (${typeof sampleProduct[key]})</li>`;
+                    });
+                    html += `</ul>`;
+                }
+                
+                result.innerHTML = html;
+                
+            } catch (error) {
+                result.innerHTML = `<p class="error">Analysis failed: ${error.message}</p>`;
+            }
+        }
+
+        // Auto-run session test on page load
+        window.onload = function() {
+            testSession();
+        };
+    </script>
+</body>
+</html>

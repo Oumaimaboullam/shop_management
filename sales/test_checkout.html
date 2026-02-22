@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Checkout API</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { color: green; }
+        .error { color: red; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        #results { margin-top: 20px; padding: 10px; background: #f5f5f5; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Checkout API Test</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: Check Session Status</h2>
+        <button onclick="checkSession()">Check Session</button>
+        <div id="session-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 2: Test API Connection</h2>
+        <button onclick="testAPI()">Test API</button>
+        <div id="api-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 3: Test Full Checkout</h2>
+        <button onclick="testCheckout()">Test Checkout</button>
+        <div id="checkout-result"></div>
+    </div>
+    
+    <div id="results"></div>
+
+    <script>
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = type;
+            div.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            results.appendChild(div);
+        }
+
+        async function checkSession() {
+            try {
+                log('Checking session status...');
+                const response = await fetch('../api/auth/check_session.php');
+                const data = await response.json();
+                
+                document.getElementById('session-result').innerHTML = 
+                    `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                
+                if (data.logged_in) {
+                    log('Session check: SUCCESS - User is logged in', 'success');
+                } else {
+                    log('Session check: FAILED - User not logged in', 'error');
+                }
+            } catch (error) {
+                log('Session check: ERROR - ' + error.message, 'error');
+                document.getElementById('session-result').innerHTML = 
+                    `<span class="error">Error: ${error.message}</span>`;
+            }
+        }
+
+        async function testAPI() {
+            try {
+                log('Testing API connection...');
+                
+                const testData = {
+                    items: [
+                        { id: 1, name: 'Test Product', price: 10.00, quantity: 1 }
+                    ],
+                    payment_mode_id: 1,
+                    document_type: 'sale'
+                };
+                
+                log('Sending test data: ' + JSON.stringify(testData));
+                
+                const response = await fetch('../api/sales/create.php', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                log('Response status: ' + response.status);
+                log('Response headers: ' + JSON.stringify([...response.headers]));
+                
+                const responseText = await response.text();
+                log('Raw response: ' + responseText);
+                
+                try {
+                    const data = JSON.parse(responseText);
+                    document.getElementById('api-result').innerHTML = 
+                        `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                    
+                    if (data.success) {
+                        log('API test: SUCCESS', 'success');
+                    } else {
+                        log('API test: FAILED - ' + data.message, 'error');
+                    }
+                } catch (parseError) {
+                    log('JSON parse error: ' + parseError.message, 'error');
+                    document.getElementById('api-result').innerHTML = 
+                        `<span class="error">Raw response: ${responseText}</span>`;
+                }
+            } catch (error) {
+                log('API test: ERROR - ' + error.message, 'error');
+                document.getElementById('api-result').innerHTML = 
+                    `<span class="error">Error: ${error.message}</span>`;
+            }
+        }
+
+        async function testCheckout() {
+            try {
+                log('Testing full checkout process...');
+                
+                // First, let's check if we need to log in
+                const sessionCheck = await fetch('../api/auth/check_session.php');
+                const sessionData = await sessionCheck.json();
+                
+                if (!sessionData.logged_in) {
+                    log('User not logged in. Creating mock session...');
+                    // In a real scenario, you would redirect to login
+                    // For testing, we'll proceed and see what happens
+                }
+                
+                // Test the checkout
+                const checkoutData = {
+                    items: [
+                        { id: 1, name: 'Test Product', price: 10.00, quantity: 1 }
+                    ],
+                    payment_mode_id: 1,
+                    document_type: 'sale'
+                };
+                
+                log('Sending checkout data: ' + JSON.stringify(checkoutData));
+                
+                const response = await fetch('../api/sales/create.php', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(checkoutData)
+                });
+                
+                const responseText = await response.text();
+                log('Checkout response: ' + responseText);
+                
+                try {
+                    const data = JSON.parse(responseText);
+                    document.getElementById('checkout-result').innerHTML = 
+                        `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                    
+                    if (data.success) {
+                        log('Checkout: SUCCESS - Sale ID: ' + data.sale_id, 'success');
+                        log('Would redirect to: print_receipt.php?sale_id=' + data.sale_id);
+                    } else {
+                        log('Checkout: FAILED - ' + data.message, 'error');
+                    }
+                } catch (parseError) {
+                    log('Checkout response parse error: ' + parseError.message, 'error');
+                    document.getElementById('checkout-result').innerHTML = 
+                        `<span class="error">Raw response: ${responseText}</span>`;
+                }
+            } catch (error) {
+                log('Checkout: ERROR - ' + error.message, 'error');
+                document.getElementById('checkout-result').innerHTML = 
+                    `<span class="error">Error: ${error.message}</span>`;
+            }
+        }
+
+        // Auto-run session check on page load
+        window.addEventListener('load', function() {
+            log('Test page loaded');
+            log('Testing API endpoint: ../api/sales/create.php');
+        });
+    </script>
+</body>
+</html>

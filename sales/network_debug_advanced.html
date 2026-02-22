@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Error Debug - Step by Step</title>
+    <style>
+        body { 
+            font-family: 'Courier New', monospace; 
+            margin: 20px; 
+            background: #1a1a1a;
+            color: #00ff00;
+        }
+        .step { 
+            margin: 20px 0; 
+            padding: 15px; 
+            border: 1px solid #333; 
+            border-radius: 5px; 
+            background: #2a2a2a;
+        }
+        .error { color: #ff4444; }
+        .success { color: #44ff44; }
+        .info { color: #44aaff; }
+        .warning { color: #ffaa44; }
+        button { 
+            padding: 10px 15px; 
+            margin: 5px; 
+            cursor: pointer; 
+            background: #444;
+            color: white;
+            border: 1px solid #666;
+            border-radius: 3px;
+        }
+        button:hover { background: #555; }
+        #console { 
+            margin-top: 20px; 
+            padding: 15px; 
+            background: #000;
+            border: 1px solid #444;
+            border-radius: 5px;
+            height: 300px;
+            overflow-y: auto;
+            font-size: 12px;
+        }
+        .log-entry { margin: 2px 0; }
+        pre { margin: 0; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Network Error Debug Console</h1>
+    
+    <div class="step">
+        <h3>Step 1: Environment Check</h3>
+        <button onclick="checkEnvironment()">Check Environment</button>
+        <div id="env-results"></div>
+    </div>
+    
+    <div class="step">
+        <h3>Step 2: Basic Connectivity</h3>
+        <button onclick="testBasicConnectivity()">Test Basic Connectivity</button>
+        <div id="connectivity-results"></div>
+    </div>
+    
+    <div class="step">
+        <h3>Step 3: API Endpoint Test</h3>
+        <button onclick="testAPIEndpoint()">Test API Endpoint</button>
+        <div id="api-results"></div>
+    </div>
+    
+    <div class="step">
+        <h3>Step 4: Detailed Network Analysis</h3>
+        <button onclick="detailedNetworkAnalysis()">Detailed Network Analysis</button>
+        <div id="analysis-results"></div>
+    </div>
+    
+    <div class="step">
+        <h3>Step 5: Alternative Test Methods</h3>
+        <button onclick="alternativeTests()">Try Alternative Methods</button>
+        <div id="alternative-results"></div>
+    </div>
+
+    <div id="console">
+        <div class="log-entry info">🚀 Debug console ready. Click the buttons above to start debugging.</div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const console = document.getElementById('console');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            console.appendChild(entry);
+            console.scrollTop = console.scrollHeight;
+            
+            // Also log to browser console
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        function checkEnvironment() {
+            log('🔍 Checking environment...', 'info');
+            const results = document.getElementById('env-results');
+            
+            const envInfo = {
+                'User Agent': navigator.userAgent,
+                'Current URL': window.location.href,
+                'Origin': window.location.origin,
+                'Protocol': window.location.protocol,
+                'Host': window.location.host,
+                'Pathname': window.location.pathname,
+                'Fetch API': typeof fetch !== 'undefined' ? 'Available' : 'Not Available',
+                'XMLHttpRequest': typeof XMLHttpRequest !== 'undefined' ? 'Available' : 'Not Available',
+                'CORS Support': 'withCredentials' in new XMLHttpRequest() ? 'Available' : 'Not Available',
+                'Local Storage': typeof localStorage !== 'undefined' ? 'Available' : 'Not Available',
+                'Session Storage': typeof sessionStorage !== 'undefined' ? 'Available' : 'Not Available',
+                'Cookies': navigator.cookieEnabled ? 'Enabled' : 'Disabled'
+            };
+            
+            let html = '<div class="env-info">';
+            for (const [key, value] of Object.entries(envInfo)) {
+                html += `<div><strong>${key}:</strong> ${value}</div>`;
+            }
+            html += '</div>';
+            
+            results.innerHTML = html;
+            log('✅ Environment check complete', 'success');
+        }
+
+        function testBasicConnectivity() {
+            log('🌐 Testing basic connectivity...', 'info');
+            const results = document.getElementById('connectivity-results');
+            
+            // Test 1: Current page
+            fetch(window.location.href, { method: 'HEAD' })
+                .then(response => {
+                    log(`Current page (${window.location.href}): ${response.status} ${response.statusText}`, 
+                        response.ok ? 'success' : 'warning');
+                })
+                .catch(error => {
+                    log(`Current page error: ${error.message}`, 'error');
+                });
+            
+            // Test 2: Base URL
+            const baseURL = window.location.origin + '/shop_management/';
+            fetch(baseURL, { method: 'HEAD' })
+                .then(response => {
+                    log(`Base URL (${baseURL}): ${response.status} ${response.statusText}`, 
+                        response.ok ? 'success' : 'warning');
+                })
+                .catch(error => {
+                    log(`Base URL error: ${error.message}`, 'error');
+                });
+            
+            // Test 3: API Base
+            const apiBase = window.location.origin + '/shop_management/api/';
+            fetch(apiBase, { method: 'HEAD' })
+                .then(response => {
+                    log(`API Base (${apiBase}): ${response.status} ${response.statusText}`, 
+                        response.ok ? 'success' : 'warning');
+                })
+                .catch(error => {
+                    log(`API Base error: ${error.message}`, 'error');
+                });
+            
+            results.innerHTML = '<div class="connectivity-info">Basic connectivity tests initiated. Check console for results.</div>';
+        }
+
+        function testAPIEndpoint() {
+            log('🔌 Testing API endpoint...', 'info');
+            const results = document.getElementById('api-results');
+            
+            const apiURL = window.location.origin + '/shop_management/api/sales/create.php';
+            const testData = {
+                items: [{ id: 1, name: 'Test Product', price: 10.00, quantity: 1 }],
+                payment_mode_id: 1,
+                document_type: 'sale'
+            };
+            
+            results.innerHTML = `
+                <div class="api-test-info">
+                    <h4>Testing API Endpoint:</h4>
+                    <p><strong>URL:</strong> ${apiURL}</p>
+                    <p><strong>Method:</strong> POST</p>
+                    <p><strong>Data:</strong></p>
+                    <pre>${JSON.stringify(testData, null, 2)}</pre>
+                    <p><strong>Status:</strong> <span class="status">Sending request...</span></p>
+                </div>
+            `;
+            
+            // Test with different configurations
+            const configs = [
+                { credentials: 'same-origin', headers: { 'Content-Type': 'application/json' } },
+                { credentials: 'include', headers: { 'Content-Type': 'application/json' } },
+                { credentials: 'omit', headers: { 'Content-Type': 'application/json' } },
+                { method: 'GET' }, // Try GET as fallback
+            ];
+            
+            let configIndex = 0;
+            
+            function testNextConfig() {
+                if (configIndex >= configs.length) {
+                    results.innerHTML += '<div class="error">All configurations failed.</div>';
+                    return;
+                }
+                
+                const config = configs[configIndex];
+                const method = config.method || 'POST';
+                const body = method === 'POST' ? JSON.stringify(testData) : undefined;
+                
+                log(`Testing config ${configIndex + 1}: ${JSON.stringify(config)}`, 'info');
+                
+                fetch(apiURL, { ...config, body })
+                    .then(async response => {
+                        const responseText = await response.text();
+                        
+                        results.querySelector('.status').innerHTML = 
+                            `<span class="${response.ok ? 'success' : 'warning'}">${response.status} ${response.statusText}</span>`;
+                        
+                        if (response.ok) {
+                            log(`✅ Config ${configIndex + 1} SUCCESS!`, 'success');
+                            
+                            try {
+                                const data = JSON.parse(responseText);
+                                results.innerHTML += `
+                                    <div class="success">
+                                        <h4>✅ API Response (Config ${configIndex + 1}):</h4>
+                                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                                    </div>
+                                `;
+                            } catch (e) {
+                                results.innerHTML += `
+                                    <div class="warning">
+                                        <h4>⚠️ Raw Response (Config ${configIndex + 1}):</h4>
+                                        <pre>${responseText}</pre>
+                                    </div>
+                                `;
+                            }
+                        } else {
+                            log(`❌ Config ${configIndex + 1} failed with status ${response.status}`, 'error');
+                            configIndex++;
+                            testNextConfig();
+                        }
+                    })
+                    .catch(error => {
+                        log(`❌ Config ${configIndex + 1} error: ${error.message}`, 'error');
+                        configIndex++;
+                        testNextConfig();
+                    });
+            }
+            
+            testNextConfig();
+        }
+
+        function detailedNetworkAnalysis() {
+            log('🔬 Performing detailed network analysis...', 'info');
+            const results = document.getElementById('analysis-results');
+            
+            // Check for common network issues
+            const issues = [];
+            
+            // Check 1: Protocol mismatch
+            if (window.location.protocol === 'file:') {
+                issues.push('Running from file:// protocol - must use http:// or https://');
+            }
+            
+            // Check 2: CORS issues
+            const apiURL = window.location.origin + '/shop_management/api/sales/create.php';
+            if (window.location.origin !== new URL(apiURL).origin) {
+                issues.push('Potential CORS issue - different origins');
+            }
+            
+            // Check 3: Path issues
+            const currentPath = window.location.pathname;
+            if (!currentPath.includes('shop_management')) {
+                issues.push('Current path does not include shop_management directory');
+            }
+            
+            // Check 4: Browser security
+            if (window.location.protocol === 'https:' && apiURL.startsWith('http:')) {
+                issues.push('Mixed content - HTTPS page trying to access HTTP resource');
+            }
+            
+            // Check 5: Localhost vs IP issues
+            if (window.location.hostname === 'localhost') {
+                issues.push('Using localhost - try 127.0.0.1 instead');
+            }
+            
+            results.innerHTML = `
+                <div class="analysis-results">
+                    <h4>Network Analysis Results:</h4>
+                    <div class="issues">
+                        ${issues.length > 0 ? 
+                            issues.map(issue => `<div class="warning">⚠️ ${issue}</div>`).join('') :
+                            '<div class="success">✅ No obvious network issues detected</div>'
+                        }
+                    </div>
+                    <div class="recommendations">
+                        <h5>Recommendations:</h5>
+                        <ul>
+                            <li>Check if the server is running</li>
+                            <li>Verify the API endpoint exists</li>
+                            <li>Check browser console for detailed errors</li>
+                            <li>Try accessing the API URL directly in browser</li>
+                            <li>Check server logs for errors</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+            
+            issues.forEach(issue => log(`Issue found: ${issue}`, 'warning'));
+            if (issues.length === 0) {
+                log('✅ No obvious network issues detected', 'success');
+            }
+        }
+
+        function alternativeTests() {
+            log('🔄 Trying alternative test methods...', 'info');
+            const results = document.getElementById('alternative-results');
+            
+            // Method 1: XMLHttpRequest
+            function testXHR() {
+                log('Testing with XMLHttpRequest...', 'info');
+                
+                const xhr = new XMLHttpRequest();
+                const apiURL = window.location.origin + '/shop_management/api/sales/create.php';
+                const testData = {
+                    items: [{ id: 1, name: 'Test Product', price: 10.00, quantity: 1 }],
+                    payment_mode_id: 1,
+                    document_type: 'sale'
+                };
+                
+                xhr.open('POST', apiURL, true);
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.setRequestHeader('Accept', 'application/json');
+                xhr.withCredentials = true;
+                
+                xhr.onload = function() {
+                    log(`XHR Status: ${xhr.status} ${xhr.statusText}`, 
+                        xhr.status === 200 ? 'success' : 'warning');
+                    
+                    if (xhr.status === 200) {
+                        try {
+                            const data = JSON.parse(xhr.responseText);
+                            log('✅ XHR SUCCESS: ' + JSON.stringify(data), 'success');
+                        } catch (e) {
+                            log('XHR Raw Response: ' + xhr.responseText, 'info');
+                        }
+                    }
+                };
+                
+                xhr.onerror = function() {
+                    log('❌ XHR Error: Network request failed', 'error');
+                };
+                
+                xhr.ontimeout = function() {
+                    log('⏰ XHR Timeout: Request timed out', 'warning');
+                };
+                
+                xhr.timeout = 10000; // 10 second timeout
+                xhr.send(JSON.stringify(testData));
+            }
+            
+            // Method 2: Image request (to test basic connectivity)
+            function testImageRequest() {
+                log('Testing with image request...', 'info');
+                
+                const img = new Image();
+                const testURL = window.location.origin + '/shop_management/api/auth/check_session.php';
+                
+                img.onload = function() {
+                    log('✅ Image request successful - server is reachable', 'success');
+                };
+                
+                img.onerror = function() {
+                    log('❌ Image request failed - server may be unreachable', 'error');
+                };
+                
+                img.src = testURL + '?t=' + Date.now();
+            }
+            
+            // Method 3: Direct browser access
+            function testDirectAccess() {
+                log('Testing direct browser access...', 'info');
+                
+                const testURL = window.location.origin + '/shop_management/api/auth/check_session.php';
+                
+                results.innerHTML += `
+                    <div class="direct-access-test">
+                        <h4>Direct Browser Access Test:</h4>
+                        <p>Try opening this URL in a new tab:</p>
+                        <a href="${testURL}" target="_blank" class="test-link" style="color: #44aaff;">
+                            ${testURL}
+                        </a>
+                        <p><strong>Expected:</strong> JSON response with session info</p>
+                        <p><strong>If you see:</strong></p>
+                        <ul>
+                            <li>JSON data → API is working</li>
+                            <li>404 error → API endpoint missing</li>
+                            <li>500 error → Server configuration issue</li>
+                            <li>Connection refused → Server not running</li>
+                        </ul>
+                    </div>
+                `;
+            }
+            
+            // Run all alternative tests
+            testXHR();
+            setTimeout(testImageRequest, 1000);
+            setTimeout(testDirectAccess, 2000);
+            
+            results.innerHTML = '<div class="alternative-tests">Alternative tests initiated. Check console for results.</div>';
+        }
+
+        // Auto-run basic checks on page load
+        window.addEventListener('load', function() {
+            log('🚀 Network error debug console initialized', 'info');
+            log('📍 Current URL: ' + window.location.href, 'info');
+            checkEnvironment();
+        });
+    </script>
+</body>
+</html>

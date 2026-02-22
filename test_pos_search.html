@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>POS Search Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>POS Search Debug Tool</h1>
+    
+    <div class="test-section">
+        <h2>1. Session Check</h2>
+        <button onclick="checkSession()">Check Session</button>
+        <div id="sessionResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Direct API Test</h2>
+        <input type="text" id="searchQuery" placeholder="Enter search term" value="">
+        <button onclick="testSearch()">Test Search API</button>
+        <div id="searchResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Test Different Queries</h2>
+        <button onclick="testQuery('')">Empty Query</button>
+        <button onclick="testQuery('a')">Single Letter</button>
+        <button onclick="testQuery('test')">Test Word</button>
+        <button onclick="testQuery('123')">Numbers</button>
+        <div id="multipleResults"></div>
+    </div>
+
+    <script>
+        async function checkSession() {
+            const result = document.getElementById('sessionResult');
+            try {
+                const response = await fetch('api/auth/check_session.php');
+                const data = await response.json();
+                result.innerHTML = `
+                    <div class="${data.logged_in ? 'success' : 'error'}">
+                        <strong>Logged In:</strong> ${data.logged_in}<br>
+                        <strong>Session ID:</strong> ${data.session_id}<br>
+                        <strong>User ID:</strong> ${data.user_id}<br>
+                        <strong>User:</strong> <pre>${JSON.stringify(data.user, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                result.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testSearch() {
+            const query = document.getElementById('searchQuery').value;
+            await testQuery(query);
+        }
+
+        async function testQuery(query) {
+            const result = document.getElementById('searchResult');
+            const multipleResults = document.getElementById('multipleResults');
+            
+            const outputDiv = query === '' ? multipleResults : result;
+            
+            try {
+                const url = `api/products/search.php?q=${encodeURIComponent(query)}`;
+                outputDiv.innerHTML += `<div class="info">Testing: "${query}" -> ${url}</div>`;
+                
+                const response = await fetch(url);
+                const text = await response.text();
+                
+                outputDiv.innerHTML += `
+                    <div>
+                        <strong>Status:</strong> ${response.status} ${response.statusText}<br>
+                        <strong>Response:</strong>
+                        <pre>${text}</pre>
+                    </div>
+                `;
+                
+                try {
+                    const data = JSON.parse(text);
+                    if (data.success) {
+                        outputDiv.innerHTML += `<div class="success">✓ Found ${data.data.length} products</div>`;
+                    } else {
+                        outputDiv.innerHTML += `<div class="error">✗ API Error: ${data.message}</div>`;
+                    }
+                } catch (jsonError) {
+                    outputDiv.innerHTML += `<div class="error">✗ Invalid JSON: ${jsonError.message}</div>`;
+                }
+                
+            } catch (error) {
+                outputDiv.innerHTML += `<div class="error">Network Error: ${error.message}</div>`;
+            }
+            
+            outputDiv.innerHTML += '<hr>';
+        }
+
+        // Auto-run session check on load
+        window.onload = function() {
+            checkSession();
+        };
+    </script>
+</body>
+</html>
