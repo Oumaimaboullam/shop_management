@@ -4,6 +4,10 @@ header('Content-Type: application/json');
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 
+if (!isLoggedIn()) {
+    jsonResponse(['success' => false, 'message' => 'Unauthorized'], 401);
+}
+
 // Get draft ID from URL parameter
 $draftId = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
@@ -19,15 +23,21 @@ if ($_SERVER['REQUEST_METHOD'] !== 'DELETE') {
 }
 
 try {
+    $uid = (int) $_SESSION['user_id'];
     $pdo->beginTransaction();
+
+    $own = $pdo->prepare("SELECT id FROM draft_orders WHERE id = ? AND user_id = ?");
+    $own->execute([$draftId, $uid]);
+    if ($own->rowCount() === 0) {
+        $pdo->rollBack();
+        jsonResponse(['success' => false, 'message' => 'Draft not found'], 404);
+    }
     
-    // First delete draft items (due to foreign key constraint)
     $stmt = $pdo->prepare("DELETE FROM draft_items WHERE draft_id = ?");
     $stmt->execute([$draftId]);
     
-    // Then delete the draft order
-    $stmt = $pdo->prepare("DELETE FROM draft_orders WHERE id = ?");
-    $stmt->execute([$draftId]);
+    $stmt = $pdo->prepare("DELETE FROM draft_orders WHERE id = ? AND user_id = ?");
+    $stmt->execute([$draftId, $uid]);
     
     // Check if draft was actually deleted
     if ($stmt->rowCount() === 0) {

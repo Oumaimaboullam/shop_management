@@ -15,7 +15,7 @@ $stmt->execute([$user_id]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$user) {
-    header('Location: ../dashboard.php');
+    header('Location: ../index.php');
     exit();
 }
 
@@ -194,7 +194,7 @@ require_once '../includes/header.php';
                             </div>
                             
                             <div class="flex justify-end space-x-4 pt-4 border-t border-gray-200">
-                                <a href="../dashboard.php" class="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors duration-200">
+                                <a href="../index.php" class="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors duration-200">
                                     <?php echo __('cancel'); ?>
                                 </a>
                                 <button type="submit" class="px-6 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors duration-200">

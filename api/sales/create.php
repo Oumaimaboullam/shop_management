@@ -173,12 +173,11 @@ try {
         }
     }
     
-    // 3. Record Payment
-    if ($advance_payment > 0) {
-        // Record advance payment in customer_payments table
+    // 3. Record Payment (customer_payments uniquement si client associé)
+    if ($advance_payment > 0 && !empty($client_id)) {
         $stmt = $pdo->prepare("
             INSERT INTO customer_payments (sale_id, client_id, payment_amount, payment_mode_id, payment_type, notes, created_at)
-            VALUES (:sale_id, :client_id, :advance_payment, :payment_mode_id, 'advance_payment', 'Advance payment from POS', NOW())
+            VALUES (:sale_id, :client_id, :advance_payment, :payment_mode_id, 'initial_payment', 'Advance payment from POS', NOW())
         ");
         $stmt->execute([
             ':sale_id' => $sale_id,

@@ -33,7 +33,14 @@ $low_stock_count = 0;
 $low_stock_notifications = [];
 if (isset($_SESSION['user'])) {
     try {
-        $stmt = $pdo->prepare("SELECT name, stock_quantity FROM articles WHERE stock_quantity <= alert_level AND stock_quantity > 0 ORDER BY stock_quantity ASC LIMIT 5");
+        $stmt = $pdo->prepare("
+            SELECT a.name, s.quantity AS stock_quantity
+            FROM articles a
+            INNER JOIN stock s ON s.article_id = a.id
+            WHERE s.quantity <= a.stock_alert_level AND s.quantity > 0
+            ORDER BY s.quantity ASC
+            LIMIT 5
+        ");
         $stmt->execute();
         $low_stock_notifications = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $low_stock_count = count($low_stock_notifications);
@@ -431,8 +438,8 @@ if (isset($_SESSION['user'])) {
     <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden lg:hidden" onclick="UI.toggleSidebar()"></div>
     
     <!-- Modern Sidebar -->
-    <div id="sidebar" class="fixed inset-y-0 left-0 z-50 w-72 bg-gradient-to-br from-primary-700 to-primary-800 shadow-2xl transform transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0">
-        <div class="flex items-center justify-between h-20 px-6 border-b border-primary-600">
+    <div id="sidebar" class="flex flex-col fixed inset-y-0 left-0 z-50 w-72 bg-gradient-to-br from-primary-700 to-primary-800 shadow-2xl transform transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0">
+        <div class="flex items-center justify-between h-20 px-6 border-b border-primary-600 shrink-0">
             <a href="<?php echo $prefix; ?>index.php" class="flex items-center space-x-3 text-white">
                 <?php
                 $company_name = getSetting('company_name', 'Shop Management');
@@ -442,7 +449,7 @@ if (isset($_SESSION['user'])) {
             </a>
         </div>
         
-        <nav class="flex-1 px-4 py-6 space-y-2">
+        <nav class="flex-1 overflow-y-auto px-4 py-6 space-y-2">
             <?php if (hasRole(['admin'])): ?>
                 <!-- Admin can see everything -->
                 <a href="<?php echo $prefix; ?>index.php" class="flex items-center space-x-3 px-4 py-3 text-white hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200 <?php echo $current_page == 'index.php' ? 'bg-white bg-opacity-20' : ''; ?>">
@@ -510,7 +517,7 @@ if (isset($_SESSION['user'])) {
             <?php endif; ?>
         </nav>
         
-        <div class="px-4 py-6 border-t border-primary-600">
+        <div class="shrink-0 px-4 py-6 border-t border-primary-600">
             <div class="flex items-center space-x-3 mb-4">
                 <div class="w-10 h-10 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
                     <?php echo substr($currentUser['name'] ?? 'U', 0, 1); ?>

@@ -4,9 +4,13 @@ header('Content-Type: application/json');
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 
+if (!isLoggedIn()) {
+    jsonResponse(['success' => false, 'message' => 'Unauthorized'], 401);
+}
+
 try {
-    // Get all drafts with their items count and total amount
-    $stmt = $pdo->query("
+    $uid = (int) $_SESSION['user_id'];
+    $stmt = $pdo->prepare("
         SELECT 
             d.id,
             d.created_at,
@@ -18,11 +22,11 @@ try {
         FROM draft_orders d
         LEFT JOIN draft_items di ON d.id = di.draft_id
         LEFT JOIN clients c ON d.client_id = c.id
-        WHERE d.status = 'draft'
+        WHERE d.status = 'draft' AND d.user_id = ?
         GROUP BY d.id, d.created_at, d.document_type, d.client_id, c.name
         ORDER BY d.created_at DESC
     ");
-    
+    $stmt->execute([$uid]);
     $drafts = $stmt->fetchAll();
     
     jsonResponse([

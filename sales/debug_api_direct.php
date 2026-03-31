@@ -30,14 +30,14 @@ $test_data = [
 // Mock the raw input stream
 $raw_input = json_encode($test_data);
 
-// Override file_get_contents for this test
-function file_get_contents($filename) {
-    global $raw_input;
-    if ($filename === 'php://input') {
-        return $raw_input;
-    }
-    return \file_get_contents($filename);
-}
+// Override file_get_contents for this test is disabled.
+// function file_get_contents($filename) {
+//     global $raw_input;
+//     if ($filename === 'php://input') {
+//         return $raw_input;
+//     }
+//     return \file_get_contents($filename);
+// }
 
 echo "<h2>Test Data:</h2>\n";
 echo "<pre>" . json_encode($test_data, JSON_PRETTY_PRINT) . "</pre>\n";

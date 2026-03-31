@@ -4,7 +4,7 @@ require_once '../includes/functions.php';
 
 // Check if user is logged in and has admin role
 if (!isLoggedIn() || $_SESSION['user']['role'] !== 'admin') {
-    header('Location: ../dashboard.php');
+    header('Location: ../index.php');
     exit();
 }
 

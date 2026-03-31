@@ -23,11 +23,12 @@ try {
     
     // Insert new category
     $stmt = $pdo->prepare("
-        INSERT INTO categories (name, parent_id)
-        VALUES (:name, :parent_id)
+        INSERT INTO categories (name, description, parent_id)
+        VALUES (:name, :description, :parent_id)
     ");
     $stmt->execute([
         ':name' => $input['name'],
+        ':description' => $input['description'] ?? null,
         ':parent_id' => $input['parent_id'] ?? null
     ]);
     

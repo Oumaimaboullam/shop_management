@@ -1,6 +1,21 @@
 <?php
 // config/database.php
 
+// Chemin URL public vers la racine de l'app (ex. /shop-management), pour les redirections
+if (!defined('APP_BASE_PATH')) {
+    $docRoot = (!empty($_SERVER['DOCUMENT_ROOT']))
+        ? str_replace('\\', '/', realpath($_SERVER['DOCUMENT_ROOT']))
+        : '';
+    $projRoot = realpath(__DIR__ . DIRECTORY_SEPARATOR . '..');
+    $projRoot = $projRoot ? str_replace('\\', '/', $projRoot) : '';
+    if ($docRoot && $projRoot && strpos($projRoot, $docRoot) === 0) {
+        $rel = substr($projRoot, strlen($docRoot));
+        define('APP_BASE_PATH', rtrim(str_replace('\\', '/', $rel), '/'));
+    } else {
+        define('APP_BASE_PATH', '');
+    }
+}
+
 // Database constants
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'shop_management');

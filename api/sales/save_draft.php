@@ -4,6 +4,10 @@ header('Content-Type: application/json');
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 
+if (!isLoggedIn()) {
+    jsonResponse(['success' => false, 'message' => 'Unauthorized'], 401);
+}
+
 // Get JSON input
 $input = json_decode(file_get_contents('php://input'), true);
 
@@ -15,8 +19,7 @@ if (!$input) {
 try {
     $pdo->beginTransaction();
     
-    // Get current user ID (you may need to adjust this based on your session management)
-    $userId = $_SESSION['user_id'] ?? 1; // Default to user ID 1 if not set
+    $userId = (int) $_SESSION['user_id'];
     
     // Handle client_id - only set if it's a valid integer
     $clientId = null;

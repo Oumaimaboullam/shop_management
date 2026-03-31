@@ -122,6 +122,7 @@ CREATE TABLE IF NOT EXISTS sales (
     discount_amount DECIMAL(10,2) DEFAULT 0,
     total_amount DECIMAL(10,2) NOT NULL,
     paid_amount DECIMAL(10,2) DEFAULT 0,
+    advance_payment DECIMAL(10,2) DEFAULT 0,
     status ENUM('draft', 'confirmed', 'paid', 'partial', 'cancelled') DEFAULT 'draft',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (client_id) REFERENCES clients(id),
@@ -176,6 +177,31 @@ CREATE TABLE IF NOT EXISTS payments (
     payment_date DATE NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (payment_mode_id) REFERENCES payment_modes(id)
+);
+
+CREATE TABLE IF NOT EXISTS customer_payments (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    sale_id INT NOT NULL,
+    client_id INT NOT NULL,
+    payment_amount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    payment_mode_id INT NULL,
+    payment_type ENUM('initial_payment', 'remaining_payment', 'refund') NOT NULL DEFAULT 'initial_payment',
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (sale_id) REFERENCES sales(id) ON DELETE CASCADE,
+    FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
+    FOREIGN KEY (payment_mode_id) REFERENCES payment_modes(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS purchase_payments (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    purchase_id INT NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    payment_type ENUM('cash', 'check', 'transfer', 'card') NOT NULL,
+    payment_date DATE NOT NULL,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (purchase_id) REFERENCES purchases(id)
 );
 
 -- 10. PAYMENT SITUATIONS
@@ -275,7 +301,7 @@ SELECT * FROM (SELECT 'Credit Card') AS tmp WHERE NOT EXISTS (SELECT name FROM p
 
 -- Insert default admin user (password: admin123)
 INSERT INTO users (name, username, password_hash, role) 
-SELECT 'Administrator', 'admin', '$2y$10$4.bb/1.bb/1.bb/1.bb/1.bb/1.bb/1.bb/1.bb/1.bb/1.bb/1.', 'admin' 
+SELECT 'Administrator', 'admin', '$2y$10$7gpc8.0A41C84xjgK7akROlIVQb/NyPVszXLAT6/ecmMJ1fdwPlXW', 'admin' 
 WHERE NOT EXISTS (SELECT username FROM users WHERE username = 'admin');
 
 -- Insert default settings

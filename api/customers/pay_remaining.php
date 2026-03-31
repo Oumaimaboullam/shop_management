@@ -44,6 +44,10 @@ try {
     if (!$transaction) {
         throw new Exception('Transaction not found');
     }
+
+    if (empty($transaction['client_id'])) {
+        throw new Exception('Cette vente n\'est pas associée à un client');
+    }
     
     $currentAdvance = $transaction['advance_payment'] ?? 0;
     $totalAmount = $transaction['total_amount'];

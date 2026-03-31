@@ -63,9 +63,9 @@ function isLoggedIn() {
  */
 function requireLogin() {
     if (!isLoggedIn()) {
-        // Adjust path dynamically if needed, or assume standard structure
-        $path = '/shop_management/login.php';
-        header("Location: " . $path);
+        $base = defined('APP_BASE_PATH') ? APP_BASE_PATH : '';
+        $loginUrl = ($base === '' ? '' : $base) . '/login.php';
+        header('Location: ' . $loginUrl);
         exit();
     }
 }

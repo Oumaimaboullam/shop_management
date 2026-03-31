@@ -4,6 +4,10 @@ header('Content-Type: application/json');
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 
+if (!isLoggedIn()) {
+    jsonResponse(['success' => false, 'message' => 'Unauthorized'], 401);
+}
+
 $draftId = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
 if ($draftId === 0) {
@@ -12,9 +16,9 @@ if ($draftId === 0) {
 }
 
 try {
+    $uid = (int) $_SESSION['user_id'];
     $pdo->beginTransaction();
     
-    // Get draft details with items
     $stmt = $pdo->prepare("
         SELECT 
             d.*,
@@ -28,10 +32,10 @@ try {
         LEFT JOIN clients c ON d.client_id = c.id
         LEFT JOIN draft_items di ON d.id = di.draft_id
         LEFT JOIN articles a ON di.article_id = a.id
-        WHERE d.id = ? AND d.status = 'draft'
+        WHERE d.id = ? AND d.status = 'draft' AND d.user_id = ?
         ORDER BY di.id
     ");
-    $stmt->execute([$draftId]);
+    $stmt->execute([$draftId, $uid]);
     $draftData = $stmt->fetchAll();
     
     if (empty($draftData)) {

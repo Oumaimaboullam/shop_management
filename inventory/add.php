@@ -481,7 +481,7 @@ function addCategory(event) {
     }
     
     // Send AJAX request to add category
-    fetch('add_category_ajax.php', {
+    fetch('../api/categories/create.php', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -497,7 +497,7 @@ function addCategory(event) {
             // Add new option to category select
             const select = document.getElementById('category_id');
             const option = document.createElement('option');
-            option.value = data.category_id;
+            option.value = data.category.id;
             option.textContent = name;
             option.selected = true;
             select.appendChild(option);

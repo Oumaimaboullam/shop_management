@@ -51,7 +51,7 @@ $modes = $pdo->query("SELECT * FROM payment_modes")->fetchAll();
                 </div>
 
                 <!-- Products Grid -->
-                <div id="productGrid" class="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 overflow-y-auto max-h-[calc(100vh-350px)] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                <div id="productGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 overflow-y-auto max-h-[calc(100vh-350px)] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                     <!-- Products will be loaded here -->
                     <div class="col-span-full text-center text-gray-500 py-12">
                         <div class="flex flex-col items-center justify-center space-y-4">
