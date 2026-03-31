@@ -2,6 +2,7 @@
 require_once '../includes/functions.php';
 require_once '../config/database.php';
 requireLogin();
+requireRole(['admin', 'manager', 'cashier']);
 $pageTitle = __('point_of_sale');
 require_once '../includes/header.php';
 

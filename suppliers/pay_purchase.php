@@ -2,6 +2,7 @@
 require_once '../includes/functions.php';
 require_once '../config/database.php';
 requireLogin();
+requireRole(['admin', 'manager']);
 
 $purchase_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
@@ -242,3 +243,4 @@ require_once '../includes/header.php';
 </div>
 
 <?php require_once '../includes/footer.php'; ?>
+

@@ -2,6 +2,7 @@
 require_once '../includes/functions.php';
 require_once '../config/database.php';
 requireLogin();
+requireRole(['admin', 'manager']);
 
 // Handle bulk product deletion
 if (isset($_POST['bulk_delete']) && !empty($_POST['selected_products'])) {

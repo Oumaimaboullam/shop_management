@@ -114,7 +114,11 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    window.location.href = 'index.php';
+                    if (data.role === 'cashier') {
+                        window.location.href = 'sales/pos.php';
+                    } else {
+                        window.location.href = 'index.php';
+                    }
                 } else {
                     errorMessage.textContent = data.message || 'Login failed';
                     errorMessage.style.display = 'block';

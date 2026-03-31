@@ -2,6 +2,7 @@
 require_once '../includes/functions.php';
 require_once '../config/database.php';
 requireLogin();
+requireRole(['admin', 'manager']);
 
 $pageTitle = __('supplier_directory');
 require_once '../includes/header.php';

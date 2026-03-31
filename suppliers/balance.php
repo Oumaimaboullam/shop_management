@@ -2,6 +2,7 @@
 require_once '../includes/functions.php';
 require_once '../config/database.php';
 requireLogin();
+requireRole(['admin', 'manager']);
 
 // Fetch all suppliers with their balance from database
 $stmt = $pdo->query("
@@ -195,3 +196,4 @@ function exportToExcel() {
 </script>
 
 <?php require_once '../includes/footer.php'; ?>
+

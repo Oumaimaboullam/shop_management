@@ -2,6 +2,7 @@
 require_once '../includes/functions.php';
 require_once '../config/database.php';
 requireLogin();
+requireRole(['admin', 'manager', 'cashier']);
 $pageTitle = __('sales_history', 'Sales History');
 require_once '../includes/header.php';
 

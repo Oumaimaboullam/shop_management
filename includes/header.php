@@ -502,11 +502,63 @@ if (isset($_SESSION['user'])) {
                     <span class="font-medium"><?php echo __('settings'); ?></span>
                 </a>
                 
-            <?php elseif (hasRole(['manager', 'cashier'])): ?>
-                <!-- Manager and Cashier can only see POS/Sales/Returns -->
+            <?php elseif (hasRole(['manager'])): ?>
+                <!-- Manager can see everything except settings -->
+                <a href="<?php echo $prefix; ?>index.php" class="flex items-center space-x-3 px-4 py-3 text-white hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200 <?php echo $current_page == 'index.php' ? 'bg-white bg-opacity-20' : ''; ?>">
+                    <i class="fas fa-home w-5"></i>
+                    <span class="font-medium"><?php echo __('dashboard'); ?></span>
+                </a>
+                
                 <a href="<?php echo $prefix; ?>sales/pos.php" class="flex items-center space-x-3 px-4 py-3 text-white hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200 <?php echo $current_page == 'pos.php' ? 'bg-white bg-opacity-20' : ''; ?>">
                     <i class="fas fa-cash-register w-5"></i>
                     <span class="font-medium"><?php echo __('pos'); ?></span>
+                </a>
+                
+                <a href="<?php echo $prefix; ?>inventory/products.php" class="flex items-center space-x-3 px-4 py-3 text-white hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200 <?php echo $current_page == 'products.php' ? 'bg-white bg-opacity-20' : ''; ?>">
+                    <i class="fas fa-box w-5"></i>
+                    <span class="font-medium"><?php echo __('inventory'); ?></span>
+                </a>
+                
+                <a href="<?php echo $prefix; ?>purchases/list.php" class="flex items-center space-x-3 px-4 py-3 text-white hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200 <?php echo $current_page == 'list.php' && strpos($_SERVER['PHP_SELF'], 'purchases') ? 'bg-white bg-opacity-20' : ''; ?>">
+                    <i class="fas fa-truck w-5"></i>
+                    <span class="font-medium"><?php echo __('purchases'); ?></span>
+                </a>
+                
+                <a href="<?php echo $prefix; ?>customers/list.php" class="flex items-center space-x-3 px-4 py-3 text-white hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200 <?php echo $current_page == 'list.php' && strpos($_SERVER['PHP_SELF'], 'customers') ? 'bg-white bg-opacity-20' : ''; ?>">
+                    <i class="fas fa-users w-5"></i>
+                    <span class="font-medium"><?php echo __('customers'); ?></span>
+                </a>
+                
+                <a href="<?php echo $prefix; ?>suppliers/list.php" class="flex items-center space-x-3 px-4 py-3 text-white hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200 <?php echo $current_page == 'list.php' && strpos($_SERVER['PHP_SELF'], 'suppliers') ? 'bg-white bg-opacity-20' : ''; ?>">
+                    <i class="fas fa-industry w-5"></i>
+                    <span class="font-medium"><?php echo __('suppliers'); ?></span>
+                </a>
+                
+                <a href="<?php echo $prefix; ?>sales/returns.php" class="flex items-center space-x-3 px-4 py-3 text-white hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200 <?php echo $current_page == 'returns.php' ? 'bg-white bg-opacity-20' : ''; ?>">
+                    <i class="fas fa-undo w-5"></i>
+                    <span class="font-medium"><?php echo __('returns'); ?></span>
+                </a>
+                
+                <a href="<?php echo $prefix; ?>invoices/history.php" class="flex items-center space-x-3 px-4 py-3 text-white hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200 <?php echo $current_page == 'history.php' && strpos($_SERVER['PHP_SELF'], 'invoices') ? 'bg-white bg-opacity-20' : ''; ?>">
+                    <i class="fas fa-file-invoice w-5"></i>
+                    <span class="font-medium"><?php echo __('history'); ?></span>
+                </a>
+                
+                <a href="<?php echo $prefix; ?>reports/analytics_modern.php" class="flex items-center space-x-3 px-4 py-3 text-white hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200 <?php echo $current_page == 'analytics_modern.php' ? 'bg-white bg-opacity-20' : ''; ?>">
+                    <i class="fas fa-chart-line w-5"></i>
+                    <span class="font-medium"><?php echo __('analytics'); ?></span>
+                </a>
+
+            <?php elseif (hasRole(['cashier'])): ?>
+                <!-- Cashier can only see POS/Invoices/Returns -->
+                <a href="<?php echo $prefix; ?>sales/pos.php" class="flex items-center space-x-3 px-4 py-3 text-white hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200 <?php echo $current_page == 'pos.php' ? 'bg-white bg-opacity-20' : ''; ?>">
+                    <i class="fas fa-cash-register w-5"></i>
+                    <span class="font-medium"><?php echo __('pos'); ?></span>
+                </a>
+                
+                <a href="<?php echo $prefix; ?>invoices/history.php" class="flex items-center space-x-3 px-4 py-3 text-white hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200 <?php echo $current_page == 'history.php' && strpos($_SERVER['PHP_SELF'], 'invoices') ? 'bg-white bg-opacity-20' : ''; ?>">
+                    <i class="fas fa-file-invoice w-5"></i>
+                    <span class="font-medium"><?php echo __('history'); ?></span>
                 </a>
                 
                 <a href="<?php echo $prefix; ?>sales/returns.php" class="flex items-center space-x-3 px-4 py-3 text-white hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200 <?php echo $current_page == 'returns.php' ? 'bg-white bg-opacity-20' : ''; ?>">

@@ -2,6 +2,7 @@
 require_once '../includes/functions.php';
 require_once '../config/database.php';
 requireLogin();
+requireRole(['admin', 'manager']);
 
 // Get purchase ID from URL
 $purchase_id = $_GET['id'] ?? null;
@@ -557,3 +558,4 @@ require_once '../includes/header.php';
 </div>
 
 <?php require_once '../includes/footer.php'; ?>
+

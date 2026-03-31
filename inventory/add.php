@@ -8,6 +8,7 @@ header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
 require_once '../includes/functions.php';
 require_once '../config/database.php';
 requireLogin();
+requireRole(['admin', 'manager']);
 
 // Handle Form Submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

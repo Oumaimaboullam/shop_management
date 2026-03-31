@@ -2,6 +2,7 @@
 require_once '../includes/functions.php';
 require_once '../config/database.php';
 requireLogin();
+requireRole(['admin', 'manager']);
 
 // Fetch Suppliers and Products
 $suppliers = $pdo->query("SELECT * FROM suppliers ORDER BY name")->fetchAll();

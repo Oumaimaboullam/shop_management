@@ -2,6 +2,7 @@
 require_once '../includes/functions.php';
 require_once '../config/database.php';
 requireLogin();
+requireRole(['admin', 'manager']);
 
 $pageTitle = __('purchase_orders', 'Commandes d\'achat');
 require_once '../includes/header.php';

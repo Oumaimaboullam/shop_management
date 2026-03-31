@@ -4,6 +4,7 @@ require_once '../config/database.php';
 require_once '../config/printer.php';
 require_once '../includes/dynamic_table.php';
 requireLogin();
+requireRole(['admin', 'manager', 'cashier']);
 
 $sale_id = isset($_GET['sale_id']) ? (int)$_GET['sale_id'] : 0;
 
@@ -412,3 +413,4 @@ if ($discount_percent > 0) {
     </script>
 </body>
 </html>
+

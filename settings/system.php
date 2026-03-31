@@ -2,6 +2,7 @@
 require_once '../includes/functions.php';
 require_once '../config/database.php';
 requireLogin();
+requireRole(['admin']);
 $pageTitle = 'System Settings';
 
 // Handle form submission

@@ -2,6 +2,7 @@
 require_once '../includes/functions.php';
 require_once '../config/database.php';
 requireLogin();
+requireRole(['admin', 'manager', 'cashier']);
 
 // Handle search and filters
 $search = $_GET['search'] ?? '';

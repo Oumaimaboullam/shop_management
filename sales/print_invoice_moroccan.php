@@ -3,6 +3,7 @@ require_once '../includes/functions.php';
 require_once '../config/database.php';
 require_once '../includes/dynamic_table.php';
 requireLogin();
+requireRole(['admin', 'manager', 'cashier']);
 
 $sale_id = isset($_GET['sale_id']) ? (int)$_GET['sale_id'] : 0;
 
@@ -492,3 +493,4 @@ $invoice_date = date('d/m/Y', strtotime($sale['created_at']));
     </script>
 </body>
 </html>
+

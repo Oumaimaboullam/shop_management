@@ -2,6 +2,7 @@
 require_once '../includes/functions.php';
 require_once '../config/database.php';
 requireLogin();
+requireRole(['admin', 'manager']);
 
 $category_id = intval($_GET['id'] ?? 0);
 
@@ -273,3 +274,4 @@ input:valid {
 </style>
 
 <?php require_once '../includes/footer.php'; ?>
+

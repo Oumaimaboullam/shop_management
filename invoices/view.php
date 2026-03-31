@@ -2,6 +2,7 @@
 require_once '../includes/functions.php';
 require_once '../config/database.php';
 requireLogin();
+requireRole(['admin', 'manager', 'cashier']);
 
 // Add cache-busting headers
 header('Cache-Control: no-cache, no-store, must-revalidate');
@@ -459,3 +460,4 @@ function downloadPDF() {
 </script>
 
 <?php require_once '../includes/footer.php'; ?>
+

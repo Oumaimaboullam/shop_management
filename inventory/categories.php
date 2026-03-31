@@ -2,6 +2,7 @@
 require_once '../includes/functions.php';
 require_once '../config/database.php';
 requireLogin();
+requireRole(['admin', 'manager']);
 
 $pageTitle = __('categories', 'Catégories');
 require_once '../includes/header.php';

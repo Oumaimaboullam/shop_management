@@ -2,6 +2,7 @@
 require_once '../includes/functions.php';
 require_once '../config/database.php';
 requireLogin();
+requireRole(['admin', 'manager']);
 
 // Add cache-busting headers
 header('Cache-Control: no-cache, no-store, must-revalidate');
@@ -426,3 +427,4 @@ document.getElementById('date_to').addEventListener('change', applyDateFilter);
 </script>
 
 <?php require_once '../includes/footer.php'; ?>
+

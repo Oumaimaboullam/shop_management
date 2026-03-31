@@ -2,6 +2,7 @@
 require_once '../includes/functions.php';
 require_once '../config/database.php';
 requireLogin();
+requireRole(['admin', 'manager']);
 
 // Get date range from GET parameters or default to current month
 $date_from = $_GET['date_from'] ?? date('Y-m-01');
@@ -537,3 +538,4 @@ require_once '../includes/header.php';
 </script>
 
 <?php require_once '../includes/footer.php'; ?>
+

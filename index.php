@@ -4,6 +4,7 @@ require_once 'includes/functions.php';
 require_once 'config/database.php';
 
 requireLogin();
+requireRole(['admin', 'manager']);
 
 // Get dashboard data with error handling
 $today_sales = 0;

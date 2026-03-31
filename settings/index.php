@@ -3,6 +3,7 @@ require_once '../includes/functions.php';
 require_once '../config/database.php';
 
 requireLogin();
+requireRole(['admin']);
 
 // Create uploads directory if it doesn't exist
 $uploads_dir = '../uploads';

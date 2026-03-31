@@ -2,6 +2,7 @@
 require_once '../includes/functions.php';
 require_once '../config/database.php';
 requireLogin();
+requireRole(['admin', 'manager']);
 
 $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 
@@ -331,3 +332,4 @@ function makeQuickPayment() {
 </script>
 
 <?php require_once '../includes/footer.php'; ?>
+

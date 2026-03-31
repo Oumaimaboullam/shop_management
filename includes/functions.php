@@ -119,6 +119,30 @@ function hasRole($roles) {
 }
 
 /**
+ * Require specific role(s) to access a page
+ * Redirects unauthorized users
+ * @param string|array $roles
+ */
+function requireRole($roles) {
+    if (!hasRole($roles)) {
+        // Provide graceful fallback redirection
+        $base = defined('APP_BASE_PATH') ? APP_BASE_PATH : '/shop-management';
+        
+        if (isLoggedIn()) {
+            $user = getCurrentUser();
+            if ($user && $user['role'] === 'cashier') {
+                header("Location: $base/sales/pos.php");
+            } else {
+                header("Location: $base/index.php");
+            }
+        } else {
+            header("Location: $base/login.php");
+        }
+        exit();
+    }
+}
+
+/**
  * Set or get flash messages
  * @param string $type 'success', 'error', or 'warning'
  * @param string|null $message

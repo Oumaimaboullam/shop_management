@@ -2,6 +2,7 @@
 require_once '../includes/functions.php';
 require_once '../config/database.php';
 requireLogin();
+requireRole(['admin', 'manager', 'cashier']);
 
 // Fetch Returns with detailed information including stock impact
 $stmt = $pdo->query("

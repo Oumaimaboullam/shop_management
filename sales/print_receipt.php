@@ -2,6 +2,7 @@
 require_once '../includes/functions.php';
 require_once '../config/database.php';
 requireLogin();
+requireRole(['admin', 'manager', 'cashier']);
 
 $sale_id = isset($_GET['sale_id']) ? (int)$_GET['sale_id'] : 0;
 
