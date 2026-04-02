@@ -21,6 +21,6 @@ jobs:
           args: >
             -Dsonar.projectKey=shop_management
             -Dsonar.organization=oumaimaboullam
-
+          projectBaseDir: .
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
