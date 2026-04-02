@@ -33,20 +33,56 @@ $modes = $pdo->query("SELECT * FROM payment_modes")->fetchAll();
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-200px)]">
             <!-- Left: Products Section (2/3 width) -->
             <div class="lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <!-- Barcode Scanner Section -->
+                <div class="mb-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-barcode text-white"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-900">Barcode Scanner</h3>
+                                <p class="text-xs text-gray-600">Scan or type barcode for instant cart add</p>
+                            </div>
+                        </div>
+                        <div id="scanStatus" class="hidden">
+                            <div class="flex items-center space-x-2">
+                                <div class="animate-pulse w-2 h-2 bg-green-500 rounded-full"></div>
+                                <span class="text-sm text-green-600 font-medium">Ready</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="relative">
+                        <input type="text" 
+                               id="barcodeScanner" 
+                               class="w-full pl-12 pr-4 py-3 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-600 text-lg font-mono bg-white"
+                               placeholder="Scan barcode here..." 
+                               autocomplete="off">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-barcode-read h-5 w-5 text-blue-500"></i>
+                        </div>
+                        <div id="scannerFeedback" class="absolute inset-y-0 right-0 pr-3 flex items-center hidden">
+                            <div id="scannerIcon" class="w-6 h-6 rounded-full flex items-center justify-center">
+                                <!-- Icon will be set dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Search Bar -->
                 <div class="mb-6">
                     <div class="relative">
                         <input type="text" 
                                id="searchInput" 
                                class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-                               placeholder="<?php echo __('scan_barcode'); ?>" 
+                               placeholder="<?php echo __('search_products'); ?>" 
                                autofocus>
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <i class="fas fa-search h-5 w-5 text-gray-400"></i>
                         </div>
                         <button onclick="handleSearchButton()" 
                                 class="absolute inset-y-0 right-0 px-4 bg-blue-600 text-white rounded-r-lg hover:bg-blue-700 active:bg-blue-800 transform hover:scale-105 transition-all duration-200 shadow-sm hover:shadow-md">
-                            <?php echo __('search_product'); ?>
+                            <?php echo __('search'); ?>
                         </button>
                     </div>
                 </div>
@@ -182,18 +218,28 @@ $modes = $pdo->query("SELECT * FROM payment_modes")->fetchAll();
                     <!-- Sale Type -->
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 mb-2"><?php echo __('sale_type'); ?></label>
-                        <select id="saleType" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="sale"><?php echo __('sale_normal'); ?></option>
-                            <option value="invoice"><?php echo __('invoice'); ?></option>
-                            <option value="quote"><?php echo __('quote'); ?></option>
-                        </select>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button type="button" onclick="setSaleType('sale')" id="saleTypeBtn-sale" 
+                                    class="sale-type-btn px-3 py-2 border border-blue-500 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors">
+                                <?php echo __('sale_normal'); ?>
+                            </button>
+                            <button type="button" onclick="setSaleType('invoice')" id="saleTypeBtn-invoice"
+                                    class="sale-type-btn px-3 py-2 border border-gray-300 bg-white text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors">
+                                <?php echo __('invoice'); ?>
+                            </button>
+                            <button type="button" onclick="setSaleType('quote')" id="saleTypeBtn-quote"
+                                    class="sale-type-btn px-3 py-2 border border-gray-300 bg-white text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors">
+                                <?php echo __('quote'); ?>
+                            </button>
+                        </div>
+                        <input type="hidden" id="saleType" value="sale">
                     </div>
 
                     <!-- Payment Method -->
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 mb-2"><?php echo __('payment_method'); ?></label>
-                        <select id="paymentMode" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <?php foreach ($modes as $mode): ?>
+                        <div class="grid grid-cols-2 gap-2">
+                            <?php foreach ($modes as $index => $mode): ?>
                                 <?php 
                                 // Translate payment method names
                                 $translatedName = $mode['name'];
@@ -218,9 +264,14 @@ $modes = $pdo->query("SELECT * FROM payment_modes")->fetchAll();
                                         break;
                                 }
                                 ?>
-                                <option value="<?php echo $mode['id']; ?>"><?php echo htmlspecialchars($translatedName); ?></option>
+                                <button type="button" onclick="setPaymentMode('<?php echo $mode['id']; ?>')" 
+                                        id="paymentModeBtn-<?php echo $mode['id']; ?>"
+                                        class="payment-mode-btn px-3 py-2 border <?php echo $mode['id'] == 1 ? 'border-blue-500 bg-blue-500 text-white' : 'border-gray-300 bg-white text-gray-700'; ?> rounded-lg font-medium hover:bg-gray-50 transition-colors text-sm">
+                                    <?php echo htmlspecialchars($translatedName); ?>
+                                </button>
                             <?php endforeach; ?>
-                        </select>
+                        </div>
+                        <input type="hidden" id="paymentMode" value="1">
                     </div>
 
                     <!-- Discount -->
@@ -309,6 +360,148 @@ const translations = {
     retail: '<?php echo addslashes(__('retail', 'Retail')); ?>'
 };
 
+// Enhanced barcode scanner variables
+let barcodeBuffer = '';
+let barcodeTimeout;
+let isScanning = false;
+
+// Audio feedback for successful scan
+function playSuccessSound() {
+    // Create a simple beep sound
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.value = 1000; // 1kHz beep
+    oscillator.type = 'sine';
+    
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.1);
+}
+
+// Audio feedback for error
+function playErrorSound() {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.value = 300; // Low frequency buzz
+    oscillator.type = 'square';
+    
+    gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.2);
+}
+
+// Show scanner feedback
+function showScannerFeedback(type, message) {
+    const feedback = document.getElementById('scannerFeedback');
+    const icon = document.getElementById('scannerIcon');
+    const scannerInput = document.getElementById('barcodeScanner');
+    
+    feedback.classList.remove('hidden');
+    
+    if (type === 'success') {
+        icon.className = 'w-6 h-6 rounded-full flex items-center justify-center bg-green-500';
+        icon.innerHTML = '<i class="fas fa-check text-white text-xs"></i>';
+        scannerInput.classList.add('border-green-500');
+        scannerInput.classList.remove('border-red-500');
+        playSuccessSound();
+    } else if (type === 'error') {
+        icon.className = 'w-6 h-6 rounded-full flex items-center justify-center bg-red-500';
+        icon.innerHTML = '<i class="fas fa-times text-white text-xs"></i>';
+        scannerInput.classList.add('border-red-500');
+        scannerInput.classList.remove('border-green-500');
+        playErrorSound();
+    } else {
+        icon.className = 'w-6 h-6 rounded-full flex items-center justify-center bg-blue-500';
+        icon.innerHTML = '<i class="fas fa-spinner fa-spin text-white text-xs"></i>';
+        scannerInput.classList.remove('border-green-500', 'border-red-500');
+    }
+    
+    // Hide feedback after 2 seconds
+    setTimeout(() => {
+        feedback.classList.add('hidden');
+        scannerInput.classList.remove('border-green-500', 'border-red-500');
+    }, 2000);
+}
+
+// Fast barcode lookup using dedicated API
+async function lookupBarcode(barcode) {
+    try {
+        showScannerFeedback('loading');
+        
+        const response = await fetch(`../api/products/barcode.php?barcode=${encodeURIComponent(barcode)}`);
+        const data = await response.json();
+        
+        if (data.success && data.data) {
+            showScannerFeedback('success');
+            addToCart(data.data);
+            document.getElementById('barcodeScanner').value = '';
+            showNotification(`${data.data.name} added to cart!`, 'success');
+            return true;
+        } else {
+            showScannerFeedback('error');
+            showNotification(translations.barcode_not_found, 'error');
+            return false;
+        }
+    } catch (error) {
+        console.error('Barcode lookup error:', error);
+        showScannerFeedback('error');
+        showNotification(translations.error_searching_barcode, 'error');
+        return false;
+    }
+}
+
+// Handle barcode scanner input (simplified version)
+function handleBarcodeInput(event) {
+    const input = event.target;
+    const key = event.key;
+    
+    // Clear previous timeout
+    clearTimeout(barcodeTimeout);
+    
+    if (key === 'Enter') {
+        // Process complete barcode
+        event.preventDefault();
+        if (barcodeBuffer.length > 0) {
+            lookupBarcode(barcodeBuffer);
+            barcodeBuffer = '';
+            input.value = '';
+        }
+    } else if (key === 'Escape') {
+        // Clear buffer
+        event.preventDefault();
+        barcodeBuffer = '';
+        input.value = '';
+    } else if (key.length === 1) {
+        // Add character to buffer
+        barcodeBuffer += key;
+        input.value = barcodeBuffer;
+        event.preventDefault(); // Prevent double input
+    }
+    
+    // Set timeout to detect when scanning stops
+    barcodeTimeout = setTimeout(() => {
+        if (barcodeBuffer.length >= 6) {
+            lookupBarcode(barcodeBuffer);
+            barcodeBuffer = '';
+            input.value = '';
+        }
+    }, 200); // 200ms delay
+}
+
 // Toggle wholesale mode
 function toggleWholesale() {
     isWholesaleMode = !isWholesaleMode;
@@ -334,6 +527,63 @@ function toggleWholesale() {
 document.addEventListener('DOMContentLoaded', () => {
     searchProducts(''); // Load all/some products initially
     loadClients(); // Load clients for selection
+    
+    // Initialize buttons
+    initializeButtons();
+    
+    // Setup barcode scanner
+    const barcodeScanner = document.getElementById('barcodeScanner');
+    let isManualMode = false;
+    
+    // Toggle between manual and automatic mode
+    barcodeScanner.addEventListener('focus', () => {
+        isManualMode = true;
+        barcodeScanner.placeholder = "Type barcode manually or scan...";
+    });
+    
+    barcodeScanner.addEventListener('blur', () => {
+        setTimeout(() => {
+            isManualMode = false;
+            barcodeScanner.placeholder = "Scan barcode here...";
+        }, 200);
+    });
+    
+    // Enhanced input handler
+    barcodeScanner.addEventListener('keydown', (e) => {
+        if (!isManualMode) {
+            handleBarcodeInput(e);
+        } else {
+            // Manual mode - allow normal typing with Enter to submit
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const value = barcodeScanner.value.trim();
+                if (value.length >= 6) {
+                    lookupBarcode(value);
+                    barcodeScanner.value = '';
+                }
+            }
+        }
+    });
+    
+    barcodeScanner.addEventListener('input', (e) => {
+        // Handle paste events for QR codes
+        const pastedText = e.target.value.trim();
+        if (pastedText.length >= 6 && e.inputType === 'insertFromPaste') {
+            setTimeout(() => {
+                if (e.target.value.trim().length >= 6) {
+                    lookupBarcode(e.target.value.trim());
+                    e.target.value = '';
+                }
+            }, 100);
+        }
+    });
+    
+    // Remove auto-focus - let user choose when to use barcode scanner
+    // barcodeScanner.focus();
+    
+    // Show scan status
+    const scanStatus = document.getElementById('scanStatus');
+    scanStatus.classList.remove('hidden');
     
     const searchInput = document.getElementById('searchInput');
     let searchTimeout;
@@ -401,6 +651,15 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (!customerSearch.contains(e.target) && !dropdown.contains(e.target)) {
             dropdown.classList.add('hidden');
+        }
+    });
+    
+    // Auto-focus barcode scanner when clicking outside other inputs
+    document.addEventListener('click', (e) => {
+        if (e.target.tagName !== 'INPUT' || e.target.id === 'barcodeScanner') {
+            setTimeout(() => {
+                barcodeScanner.focus();
+            }, 100);
         }
     });
 });
@@ -915,18 +1174,91 @@ function renderProducts(list) {
 }
 
 function addToCart(product) {
+    // Check stock availability
+    const stock = parseInt(product.stock || 0);
+    if (stock <= 0) {
+        showNotification(`${product.name} is out of stock!`, 'error');
+        playErrorSound();
+        return false;
+    }
+    
     const existing = cart.find(item => item.id === product.id);
+    
     if (existing) {
+        // Check if adding one more would exceed stock
+        if (existing.quantity >= stock) {
+            showNotification(`Only ${stock} ${product.name} available in stock!`, 'error');
+            playErrorSound();
+            return false;
+        }
         existing.quantity++;
+        showNotification(`${product.name} quantity updated (${existing.quantity})`, 'success');
     } else {
         cart.push({
             id: product.id,
             name: product.name,
+            barcode: product.barcode,
             unit_price: parseFloat(isWholesaleMode ? product.wholesale : product.sale_price),
-            quantity: 1
+            quantity: 1,
+            stock: stock
         });
+        showNotification(`${product.name} added to cart!`, 'success');
     }
+    
     renderCart();
+    playSuccessSound();
+    
+    // Flash the cart to show it was updated
+    const cartContainer = document.getElementById('cartItems');
+    cartContainer.classList.add('animate-pulse', 'bg-green-50');
+    setTimeout(() => {
+        cartContainer.classList.remove('animate-pulse', 'bg-green-50');
+    }, 1000);
+    
+    return true;
+}
+
+// Sale Type Button Functions
+function setSaleType(type) {
+    // Update hidden input
+    document.getElementById('saleType').value = type;
+    
+    // Update button styles
+    const buttons = document.querySelectorAll('.sale-type-btn');
+    buttons.forEach(btn => {
+        btn.classList.remove('border-blue-500', 'bg-blue-500', 'text-white');
+        btn.classList.add('border-gray-300', 'bg-white', 'text-gray-700');
+    });
+    
+    // Highlight selected button
+    const selectedBtn = document.getElementById('saleTypeBtn-' + type);
+    selectedBtn.classList.remove('border-gray-300', 'bg-white', 'text-gray-700');
+    selectedBtn.classList.add('border-blue-500', 'bg-blue-500', 'text-white');
+}
+
+// Payment Mode Button Functions
+function setPaymentMode(modeId) {
+    // Update hidden input
+    document.getElementById('paymentMode').value = modeId;
+    
+    // Update button styles
+    const buttons = document.querySelectorAll('.payment-mode-btn');
+    buttons.forEach(btn => {
+        btn.classList.remove('border-blue-500', 'bg-blue-500', 'text-white');
+        btn.classList.add('border-gray-300', 'bg-white', 'text-gray-700');
+    });
+    
+    // Highlight selected button
+    const selectedBtn = document.getElementById('paymentModeBtn-' + modeId);
+    selectedBtn.classList.remove('border-gray-300', 'bg-white', 'text-gray-700');
+    selectedBtn.classList.add('border-blue-500', 'bg-blue-500', 'text-white');
+}
+
+// Initialize button states
+function initializeButtons() {
+    // Set initial states
+    setSaleType('sale');
+    setPaymentMode('1');
 }
 
 function removeFromCart(index) {

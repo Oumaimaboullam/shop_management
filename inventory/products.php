@@ -120,15 +120,23 @@ $pageTitle = __('product_inventory');
 require_once '../includes/header.php';
 
 // Fetch Products with Stock and Category (Active only)
-$stmt = $pdo->query("
-    SELECT a.*, c.name as category_name, s.quantity as current_stock 
-    FROM articles a 
-    LEFT JOIN categories c ON a.category_id = c.id
-    LEFT JOIN stock s ON a.id = s.article_id
-    WHERE a.is_active = 1
-    ORDER BY a.name ASC
-");
-$products = $stmt->fetchAll();
+try {
+    // Simple query to get all products
+    $stmt = $pdo->query("
+        SELECT a.*, c.name as category_name, COALESCE(s.quantity, 0) as current_stock 
+        FROM articles a 
+        LEFT JOIN categories c ON a.category_id = c.id
+        LEFT JOIN stock s ON a.id = s.article_id
+        WHERE a.is_active = 1
+        ORDER BY a.name ASC
+    ");
+    $products = $stmt->fetchAll();
+    
+} catch (PDOException $e) {
+    error_log("Database error: " . $e->getMessage());
+    $products = [];
+}
+
 
 // Fetch categories for filter
 $categories = $pdo->query("SELECT * FROM categories ORDER BY name");
@@ -164,14 +172,18 @@ $category_list = $categories->fetchAll();
             <div class="flex-1 max-w-md">
                 <div class="relative">
                     <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                    <input type="text" id="productSearch" placeholder="<?php echo __('search'); ?>..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200">
+                    <input type="text" id="productSearch" placeholder="<?php echo __('search'); ?>..." 
+                           class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                           autocomplete="off">
                 </div>
             </div>
             <div class="flex items-center space-x-3">
-                <select id="categoryFilter" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200">
-                    <option value=""><?php echo __('all_status'); ?></option>
+                <select id="categoryFilter" 
+                        class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                        onclick="this.focus()">
+                    <option value=""><?php echo __('all_categories'); ?></option>
                     <?php foreach ($category_list as $category): ?>
-                        <option value="<?php echo htmlspecialchars($category['name']); ?>"><?php echo htmlspecialchars($category['name']); ?></option>
+                        <option value="<?php echo htmlspecialchars(strtolower($category['name'])); ?>"><?php echo htmlspecialchars($category['name']); ?></option>
                     <?php endforeach; ?>
                 </select>
                 <a href="../export_csv.php?type=products" download class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors duration-200">
@@ -209,261 +221,202 @@ $category_list = $categories->fetchAll();
         </div>
     <?php endif; ?>
 
-    <!-- Products Table -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <!-- Bulk Actions Bar -->
-        <div class="bg-gray-50 border-b border-gray-200 px-6 py-3">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-4">
-                    <input type="checkbox" id="selectAll" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                    <label for="selectAll" class="text-sm font-medium text-gray-700">Select All</label>
-                    <span id="selectedCount" class="text-sm text-gray-500">0 selected</span>
-                </div>
-                <div class="flex items-center space-x-3">
-                    <button id="bulkDeleteBtn" onclick="confirmBulkDelete()" disabled class="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed">
-                        <i class="fas fa-trash mr-2"></i>
-                        Delete Selected
-                    </button>
-                </div>
-            </div>
-        </div>
-        
-        <div class="overflow-x-auto">
-            <form id="bulkDeleteForm" method="POST">
-                <table class="w-full" id="productsTable">
-                    <thead class="bg-gray-50 border-b border-gray-200">
-                        <tr>
-                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">#</th>
-                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors duration-200" onclick="sortTable(1)">
-                                <div class="flex items-center space-x-1">
-                                    <span><?php echo __('image'); ?></span>
-                                </div>
-                            </th>
-                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors duration-200" onclick="sortTable(2)">
-                                <div class="flex items-center space-x-1">
-                                    <span><?php echo __('barcode'); ?></span>
-                                    <i class="fas fa-sort text-gray-400"></i>
-                                </div>
-                            </th>
-                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors duration-200" onclick="sortTable(3)">
-                                <div class="flex items-center space-x-1">
-                                    <span><?php echo __('name'); ?></span>
-                                    <i class="fas fa-sort text-gray-400"></i>
-                                </div>
-                            </th>
-                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors duration-200" onclick="sortTable(4)">
-                                <div class="flex items-center space-x-1">
-                                    <span><?php echo __('purchase_price'); ?></span>
-                                    <i class="fas fa-sort text-gray-400"></i>
-                                </div>
-                            </th>
-                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors duration-200" onclick="sortTable(5)">
-                                <div class="flex items-center space-x-1">
-                                    <span><?php echo __('sale_price'); ?></span>
-                                    <i class="fas fa-sort text-gray-400"></i>
-                                </div>
-                            </th>
-                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors duration-200" onclick="sortTable(6)">
-                                <div class="flex items-center space-x-1">
-                                    <span><?php echo __('stock'); ?></span>
-                                    <i class="fas fa-sort text-gray-400"></i>
-                                </div>
-                            </th>
-                            <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                <?php echo __('actions'); ?>
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        <?php if (count($products) > 0): ?>
-                            <?php foreach ($products as $product): 
-                                $stock = $product['current_stock'] ?? 0;
-                                $is_low_stock = $stock <= $product['stock_alert_level'] && $stock > 0;
-                                $is_out_of_stock = $stock <= 0;
-                                $stock_color = $is_out_of_stock ? 'text-red-600 font-bold' : ($is_low_stock ? 'text-yellow-600 font-semibold' : 'text-green-600');
-                            ?>
-                                <tr class="hover:bg-gray-50 transition-colors duration-200" data-name="<?php echo strtolower($product['name']); ?>" data-barcode="<?php echo strtolower($product['barcode']); ?>" data-category="<?php echo strtolower($product['category_name'] ?? ''); ?>">
-                                    <td class="px-6 py-4">
-                                        <input type="checkbox" name="selected_products[]" value="<?php echo $product['id']; ?>" class="product-checkbox w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <?php if (!empty($product['image'])): ?>
-                                            <img src="../<?php echo htmlspecialchars($product['image']); ?>" alt="<?php echo htmlspecialchars($product['name']); ?>" class="h-12 w-12 object-cover rounded-lg border border-gray-200">
-                                        <?php else: ?>
-                                            <div class="h-12 w-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                                                <?php echo substr($product['name'], 0, 2); ?>
-                                            </div>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <div class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($product['barcode']); ?></div>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <div class="flex items-center space-x-3">
-                                            <div>
-                                                <div class="text-sm font-semibold text-gray-900"><?php echo htmlspecialchars($product['name']); ?></div>
-                                                <div class="text-xs text-gray-500"><?php echo __('sku'); ?>: <?php echo htmlspecialchars($product['sku'] ?? 'N/A'); ?></div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <div class="text-sm text-gray-900">
-                                            <?php echo htmlspecialchars($product['category_name'] ?? __('uncategorized')); ?>
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <div class="text-sm font-semibold text-gray-900"><?php echo number_format($product['purchase_price'], 2); ?><?php echo getSetting('currency_symbol', 'DH'); ?></div>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <div class="text-sm font-semibold text-green-600"><?php echo number_format($product['sale_price'], 2); ?><?php echo getSetting('currency_symbol', 'DH'); ?></div>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <div class="flex items-center space-x-2">
-                                            <span class="text-sm font-semibold <?php echo $stock_color; ?>"><?php echo $stock; ?></span>
-                                            <?php if ($is_low_stock && !$is_out_of_stock): ?>
-                                                <span class="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
-                                                    <?php echo __('low_stock'); ?>
-                                                </span>
-                                            <?php elseif ($is_out_of_stock): ?>
-                                                <span class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
-                                                    <?php echo __('out_of_stock'); ?>
-                                                </span>
-                                            <?php endif; ?>
-                                        </div>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <div class="flex items-center space-x-2">
-                                            <a href="view.php?id=<?php echo $product['id']; ?>" class="inline-flex items-center px-3 py-1.5 bg-primary-100 hover:bg-primary-200 text-primary-700 text-xs font-medium rounded-lg transition-colors duration-200" data-tooltip="<?php echo __('view_details'); ?>">
-                                                <i class="fas fa-eye mr-1"></i>
-                                                <?php echo __('view_all'); ?>
-                                            </a>
-                                            <a href="edit.php?id=<?php echo $product['id']; ?>" class="inline-flex items-center px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium rounded-lg transition-colors duration-200" data-tooltip="<?php echo __('edit_product'); ?>">
-                                                <i class="fas fa-edit mr-1"></i>
-                                                <?php echo __('edit'); ?>
-                                            </a>
-                                            <button type="button" onclick="confirmDelete(<?php echo $product['id']; ?>, '<?php echo htmlspecialchars(addslashes($product['name'])); ?>')" class="inline-flex items-center px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 text-xs font-medium rounded-lg transition-colors duration-200" data-tooltip="<?php echo __('delete_product'); ?>">
-                                                <i class="fas fa-trash mr-1"></i>
-                                                <?php echo __('delete'); ?>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <tr>
-                                <td colspan="8" class="px-6 py-12 text-center text-gray-500">
-                                    <div class="flex flex-col items-center justify-center">
-                                        <i class="fas fa-box-open text-4xl text-gray-300 mb-4"></i>
-                                        <p class="text-lg font-medium text-gray-900"><?php echo __('no_products_found'); ?></p>
-                                        <p class="text-sm text-gray-500 mt-1"><?php echo __('start_add_product'); ?></p>
-                                    </div>
-                                </td>
-                            </tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-                <input type="hidden" name="bulk_delete" value="1">
-            </form>
-        </div>
+    <!-- Products Grid -->
+    <div class="products-grid-container">
+        <!-- Product Cards Display -->
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div class="mb-6 flex justify-between items-center">
+        <h2 class="text-2xl font-bold text-gray-900">
+            <?php echo __('product_inventory'); ?> (<?php echo count($products); ?> produits)
+        </h2>
+        <a href="add.php" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium">
+            <i class="fas fa-plus mr-2"></i><?php echo __('add_product'); ?>
+        </a>
     </div>
+
+    <?php if (count($products) > 0): ?>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <?php foreach ($products as $product): 
+                $stock = $product['current_stock'] ?? 0;
+                $is_low_stock = $stock <= ($product['stock_alert_level'] ?? 5) && $stock > 0;
+                $is_out_of_stock = $stock <= 0;
+            ?>
+                <div class="bg-white border border-gray-200 rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300 hover:scale-102">
+                    <!-- Product Image -->
+                    <div class="relative h-44 bg-gray-100">
+                        <?php if (!empty($product['image'])): ?>
+                            <img src="../<?php echo htmlspecialchars($product['image']); ?>" 
+                                 alt="<?php echo htmlspecialchars($product['name']); ?>" 
+                                 class="w-full h-full object-cover">
+                        <?php else: ?>
+                            <div class="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                                <span class="text-white text-2xl font-bold">
+                                    <?php echo substr($product['name'], 0, 2); ?>
+                                </span>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <!-- Stock Badge -->
+                        <div class="absolute top-3 right-3">
+                            <?php if ($is_out_of_stock): ?>
+                                <span class="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow">
+                                    Rupture
+                                </span>
+                            <?php elseif ($is_low_stock): ?>
+                                <span class="bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow">
+                                    Stock faible
+                                </span>
+                            <?php else: ?>
+                                <span class="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow">
+                                    Disponible
+                                </span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                    <!-- Product Info -->
+                    <div class="p-4">
+                        <h3 class="text-base font-bold text-gray-900 mb-2 leading-tight">
+                            <?php echo htmlspecialchars($product['name']); ?>
+                        </h3>
+                        
+                        <div class="space-y-2 mb-4">
+                            <div class="flex items-center text-gray-600">
+                                <i class="fas fa-tag mr-2 text-blue-500 text-sm"></i>
+                                <span class="text-sm"><?php echo htmlspecialchars($product['category_name'] ?? 'Non catégorisé'); ?></span>
+                            </div>
+                            <div class="flex items-center text-gray-600">
+                                <i class="fas fa-barcode mr-2 text-purple-500 text-sm"></i>
+                                <span class="text-sm font-mono"><?php echo htmlspecialchars($product['barcode'] ?? 'N/A'); ?></span>
+                            </div>
+                            <div class="flex items-center text-gray-600">
+                                <i class="fas fa-box mr-2 text-green-500 text-sm"></i>
+                                <span class="text-sm">Stock: <?php echo $stock; ?> unités</span>
+                            </div>
+                        </div>
+
+                        <!-- Prices -->
+                        <div class="bg-gray-50 rounded-lg p-3 mb-4">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-gray-600 text-sm">Prix d'achat:</span>
+                                <span class="text-base font-semibold text-gray-900">
+                                    <?php echo number_format($product['purchase_price'] ?? 0, 2); ?> <?php echo getSetting('currency_symbol', 'DH'); ?>
+                                </span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600 text-sm">Prix de vente:</span>
+                                <span class="text-lg font-bold text-green-600">
+                                    <?php echo number_format($product['sale_price'] ?? 0, 2); ?> <?php echo getSetting('currency_symbol', 'DH'); ?>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex gap-2">
+                            <a href="edit.php?id=<?php echo $product['id']; ?>" 
+                               class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-medium text-center transition-colors duration-200">
+                                <i class="fas fa-edit mr-1"></i>
+                                Modifier
+                            </a>
+                            <button onclick="confirmDelete(<?php echo $product['id']; ?>, '<?php echo htmlspecialchars(addslashes($product['name'])); ?>')" 
+                                    class="flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200">
+                                <i class="fas fa-trash mr-1"></i>
+                                Supprimer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    <?php else: ?>
+        <div class="text-center py-12">
+            <i class="fas fa-box-open text-6xl text-gray-300 mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900 mb-2"><?php echo __('no_products_found'); ?></h3>
+            <p class="text-gray-500 mb-4"><?php echo __('start_add_product'); ?></p>
+            <a href="add.php" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium">
+                <i class="fas fa-plus mr-2"></i><?php echo __('add_product'); ?>
+            </a>
+        </div>
+    <?php endif; ?>
 </div>
 
 <!-- Delete Confirmation Modal -->
-<div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
-    <div class="bg-white rounded-xl shadow-xl p-6 max-w-md w-full mx-4">
-        <div class="text-center">
-            <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+<div id="deleteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
                 <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
             </div>
-            <h3 class="text-lg font-semibold text-gray-900 mb-2"><?php echo __('delete_product'); ?></h3>
-            <p class="text-gray-600 mb-6"><?php echo __('confirm_delete'); ?> <span id="productName" class="font-semibold"></span>? <?php echo __('cannot_undone'); ?></p>
-            <input type="hidden" id="deleteProductId" value="">
-            <div class="flex justify-center space-x-4">
-                <button type="button" onclick="closeDeleteModal()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors duration-200">
-                    <?php echo __('cancel'); ?>
-                </button>
-                <button type="button" onclick="submitDelete()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors duration-200">
-                    <i class="fas fa-trash mr-1"></i>
-                    <?php echo __('delete_product'); ?>
-                </button>
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4"><?php echo __('confirm_delete'); ?></h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500" id="deleteMessage"></p>
+            </div>
+            <div class="items-center px-4 py-3">
+                <form id="deleteForm" method="POST">
+                    <input type="hidden" name="delete_product" value="1">
+                    <input type="hidden" name="product_id" id="deleteProductId">
+                    <button type="button" onclick="closeDeleteModal()" class="px-4 py-2 bg-gray-300 text-gray-700 text-base font-medium rounded-md w-24 mr-2">
+                        <?php echo __('cancel'); ?>
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md w-24 hover:bg-red-700">
+                        <?php echo __('delete'); ?>
+                    </button>
+                </form>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Bulk Delete Confirmation Modal -->
-<div id="bulkDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
-    <div class="bg-white rounded-xl shadow-xl p-6 max-w-md w-full mx-4">
-        <div class="text-center">
-            <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
-            </div>
-            <h3 class="text-lg font-semibold text-gray-900 mb-2">Delete Selected Products</h3>
-            <p class="text-gray-600 mb-2">Are you sure you want to delete <span id="bulkDeleteCount" class="font-semibold text-red-600">0</span> selected products?</p>
-            <p class="text-gray-500 text-sm mb-6">This action cannot be undone and will permanently remove all selected products from the database.</p>
-            <div class="flex justify-center space-x-4">
-                <button type="button" onclick="closeBulkDeleteModal()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors duration-200">
-                    <?php echo __('cancel'); ?>
-                </button>
-                <button type="button" onclick="submitBulkDelete()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors duration-200">
-                    <i class="fas fa-trash mr-1"></i>
-                    Delete Products
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modern JavaScript Enhancements -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Search functionality
+    // Search and Filter Functionality
     const searchInput = document.getElementById('productSearch');
     const categoryFilter = document.getElementById('categoryFilter');
-    const table = document.getElementById('productsTable');
-    const rows = table.querySelectorAll('tbody tr');
     
-    function filterTable() {
+    // Fix focus issue between input and select
+    if (categoryFilter) {
+        categoryFilter.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            this.focus();
+            this.click();
+        });
+    }
+    
+    function filterProducts() {
+        if (!searchInput || !categoryFilter) return;
+        
         const searchTerm = searchInput.value.toLowerCase();
         const selectedCategory = categoryFilter.value.toLowerCase();
         
-        rows.forEach(row => {
-            const name = row.dataset.name;
-            const barcode = row.dataset.barcode;
-            const category = row.dataset.category;
-            
-            const matchesSearch = name.includes(searchTerm) || barcode.includes(searchTerm);
-            const matchesCategory = !selectedCategory || category.includes(selectedCategory);
+        // Filter product cards
+        const productCards = document.querySelectorAll('.bg-white.border-gray-200.rounded-xl');
+        productCards.forEach(card => {
+            const cardText = card.textContent.toLowerCase();
+            const matchesSearch = !searchTerm || cardText.includes(searchTerm);
+            const matchesCategory = !selectedCategory || cardText.includes(selectedCategory);
             
             if (matchesSearch && matchesCategory) {
-                row.style.display = '';
+                card.style.display = '';
+                card.style.animation = 'fadeIn 0.3s ease-out';
             } else {
-                row.style.display = 'none';
+                card.style.display = 'none';
             }
         });
     }
     
-    searchInput.addEventListener('input', filterTable);
-    categoryFilter.addEventListener('change', filterTable);
-    
-    // Table row hover effects
-    rows.forEach(row => {
-        row.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateY(-1px)';
-            this.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
-        });
-        
-        row.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateY(0)';
-            this.style.boxShadow = 'none';
-        });
-    });
+    // Add event listeners
+    if (searchInput) {
+        searchInput.addEventListener('input', filterProducts);
+    }
+    if (categoryFilter) {
+        categoryFilter.addEventListener('change', filterProducts);
+    }
 });
 
-// Delete confirmation functions
 function confirmDelete(productId, productName) {
-    document.getElementById('productName').textContent = productName;
     document.getElementById('deleteProductId').value = productId;
+    document.getElementById('deleteMessage').textContent = 
+        'Êtes-vous sûr de vouloir supprimer "' + productName + '" ?';
     document.getElementById('deleteModal').classList.remove('hidden');
 }
 
@@ -471,198 +424,11 @@ function closeDeleteModal() {
     document.getElementById('deleteModal').classList.add('hidden');
 }
 
-function submitDelete() {
-    const productId = document.getElementById('deleteProductId').value;
-    
-    // Create a hidden form and submit it
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.style.display = 'none';
-    
-    const productIdInput = document.createElement('input');
-    productIdInput.type = 'hidden';
-    productIdInput.name = 'product_id';
-    productIdInput.value = productId;
-    
-    const deleteInput = document.createElement('input');
-    deleteInput.type = 'hidden';
-    deleteInput.name = 'delete_product';
-    deleteInput.value = '1';
-    
-    form.appendChild(productIdInput);
-    form.appendChild(deleteInput);
-    document.body.appendChild(form);
-    
-    form.submit();
-}
-
-// Bulk delete functions
-function confirmBulkDelete() {
-    const selectedCount = document.querySelectorAll('.product-checkbox:checked').length;
-    if (selectedCount === 0) {
-        alert('Please select at least one product to delete.');
-        return;
-    }
-    document.getElementById('bulkDeleteCount').textContent = selectedCount;
-    document.getElementById('bulkDeleteModal').classList.remove('hidden');
-}
-
-function closeBulkDeleteModal() {
-    document.getElementById('bulkDeleteModal').classList.add('hidden');
-}
-
-function submitBulkDelete() {
-    document.getElementById('bulkDeleteForm').submit();
-}
-
-// Checkbox functionality
-document.addEventListener('DOMContentLoaded', function() {
-    const selectAllCheckbox = document.getElementById('selectAll');
-    const productCheckboxes = document.querySelectorAll('.product-checkbox');
-    const selectedCount = document.getElementById('selectedCount');
-    const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
-    
-    // Select all functionality
-    function updateSelectAll() {
-        const totalCheckboxes = productCheckboxes.length;
-        const checkedCheckboxes = document.querySelectorAll('.product-checkbox:checked').length;
-        
-        selectAllCheckbox.checked = totalCheckboxes > 0 && checkedCheckboxes === totalCheckboxes;
-        
-        // Update selected count
-        selectedCount.textContent = checkedCheckboxes + ' selected';
-        
-        // Enable/disable bulk delete button
-        bulkDeleteBtn.disabled = checkedCheckboxes === 0;
-    }
-    
-    // Select all checkbox change
-    selectAllCheckbox.addEventListener('change', function() {
-        productCheckboxes.forEach(checkbox => {
-            checkbox.checked = this.checked;
-        });
-        updateSelectAll();
-    });
-    
-    // Individual checkbox changes
-    productCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', updateSelectAll);
-    });
-    
-    // Close bulk delete modal when clicking outside
-    window.addEventListener('click', function(event) {
-        const bulkDeleteModal = document.getElementById('bulkDeleteModal');
-        if (event.target === bulkDeleteModal) {
-            closeBulkDeleteModal();
-        }
-    });
-});
-
-// Table sorting function
-function sortTable(columnIndex) {
-    const table = document.getElementById('productsTable');
-    const tbody = table.querySelector('tbody');
-    const rows = Array.from(tbody.querySelectorAll('tr'));
-    const headers = table.querySelectorAll('th');
-    
-    // Toggle sort direction
-    const currentHeader = headers[columnIndex];
-    const isAscending = currentHeader.classList.contains('sorted-asc');
-    
-    // Remove sort classes from all headers
-    headers.forEach(header => {
-        header.classList.remove('sorted-asc', 'sorted-desc');
-    });
-    
-    // Add appropriate class to current header
-    currentHeader.classList.add(isAscending ? 'sorted-desc' : 'sorted-asc');
-    
-    // Sort rows
-    rows.sort((a, b) => {
-        const aValue = a.cells[columnIndex].textContent.trim();
-        const bValue = b.cells[columnIndex].textContent.trim();
-        
-        // Handle numeric columns (prices, stock)
-        if (columnIndex >= 3 && columnIndex <= 5) {
-            const aNum = parseFloat(aValue.replace(/[$,]/g, '')) || 0;
-            const bNum = parseFloat(bValue.replace(/[$,]/g, '')) || 0;
-            return isAscending ? aNum - bNum : bNum - aNum;
-        }
-        
-        // Handle text columns
-        return isAscending ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
-    });
-    
-    // Reorder DOM
-    rows.forEach(row => tbody.appendChild(row));
-}
-
 // Close modal when clicking outside
-window.addEventListener('click', function(event) {
+window.onclick = function(event) {
     const modal = document.getElementById('deleteModal');
-    if (event.target === modal) {
+    if (event.target == modal) {
         closeDeleteModal();
     }
-});
+}
 </script>
-
-<!-- Additional Modern Styling -->
-<style>
-/* Enhanced table styling */
-.table-container {
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-    transition: box-shadow 0.3s ease;
-}
-
-.table-container:hover {
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-}
-
-/* Sortable header styles */
-.sortable:hover {
-    background-color: #f9fafb;
-}
-
-.sortable.sorted-asc i::before {
-    content: '\f0de';
-}
-
-.sortable.sorted-desc i::before {
-    content: '\f0dd';
-}
-
-/* Enhanced search input */
-#productSearch, #categoryFilter {
-    transition: all 0.3s ease;
-}
-
-#productSearch:focus, #categoryFilter:focus {
-    transform: scale(1.02);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-/* Status badge enhancements */
-.status-badge {
-    transition: all 0.2s ease;
-}
-
-.status-badge:hover {
-    transform: scale(1.05);
-}
-
-/* Modal animations */
-#deleteModal {
-    transition: opacity 0.3s ease;
-}
-
-#deleteModal:not(.hidden) {
-    animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-</style>
-
-<?php require_once '../includes/footer.php'; ?>
