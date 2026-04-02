@@ -21,7 +21,7 @@ jobs:
         uses: SonarSource/sonarcloud-github-action@v2
         with:
           args: >
-            -Dsonar.projectKey=shop_management
+            -Dsonar.projectKey=oumaimaboullam_shop_management
             -Dsonar.organization=oumaimaboullam
             -Dsonar.branch.name=main
             -Dsonar.projectBaseDir=.
